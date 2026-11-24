@@ -3,58 +3,95 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TaskFlow | Interactive To-Do App</title>
+  <title>AuraBoard | Interactive Task & Focus Planner</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="background-glow"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
 
-  <main class="app-card">
-    <header class="app-header">
-      <div>
-        <span class="badge">Productivity Workspace</span>
-        <h1>TaskFlow</h1>
-        <p id="current-date" class="subtitle"></p>
-      </div>
-      <div class="progress-box">
-        <span id="progress-text">0 / 0 Done</span>
-        <div class="progress-track">
-          <div id="progress-fill" class="progress-fill"></div>
+  <div class="dashboard">
+    <!-- Top Bento Stats & Focus Timer -->
+    <section class="bento-top">
+      <div class="bento-card brand-card">
+        <span class="pill-tag">✨ Daily Focus Studio</span>
+        <h1>AuraBoard</h1>
+        <p id="today-label" class="date-text"></p>
+        <div class="streak-row">
+          <div class="stat-box">
+            <strong id="stat-total">0</strong>
+            <span>Total</span>
+          </div>
+          <div class="stat-box">
+            <strong id="stat-active">0</strong>
+            <span>Pending</span>
+          </div>
+          <div class="stat-box">
+            <strong id="stat-done">0</strong>
+            <span>Done</span>
+          </div>
         </div>
       </div>
-    </header>
 
-    <form id="todo-form" class="input-section" autocomplete="off">
-      <input
-        type="text"
-        id="task-input"
-        placeholder="What do you need to accomplish?"
-        required
-      />
-      <select id="priority-select" aria-label="Task Priority">
-        <option value="low">Low</option>
-        <option value="medium" selected>Medium</option>
-        <option value="high">High</option>
-      </select>
-      <button type="submit" class="btn-add">+ Add</button>
-    </form>
-
-    <div class="toolbar">
-      <div class="filters" role="group" aria-label="Filter tasks">
-        <button type="button" class="filter-btn active" data-filter="all">All</button>
-        <button type="button" class="filter-btn" data-filter="active">Active</button>
-        <button type="button" class="filter-btn" data-filter="completed">Completed</button>
+      <div class="bento-card timer-card">
+        <span class="pill-tag">⏱️ 25-Min Study Sprint</span>
+        <div id="timer-display" class="timer-clock">25:00</div>
+        <p id="active-focus-label" class="focus-task-name">Pick a task or start sprint</p>
+        <div class="timer-controls">
+          <button type="button" id="timer-start" class="btn-coral">Start</button>
+          <button type="button" id="timer-pause" class="btn-soft">Pause</button>
+          <button type="button" id="timer-reset" class="btn-soft">Reset</button>
+        </div>
       </div>
-      <button type="button" id="clear-completed" class="btn-clear">Clear Completed</button>
-    </div>
+    </section>
 
-    <ul id="task-list" class="task-list"></ul>
+    <!-- Add Task Form -->
+    <section class="bento-card composer-card">
+      <form id="task-form" class="composer-form" autocomplete="off">
+        <input
+          type="text"
+          id="task-input"
+          placeholder="Add a coding goal, assignment, or daily task..."
+          required
+        />
+        <select id="category-select" aria-label="Category">
+          <option value="coding">💻 Coding</option>
+          <option value="study">📚 Study</option>
+          <option value="project">🚀 Project</option>
+          <option value="personal">🌿 Personal</option>
+        </select>
+        <button type="submit" class="btn-coral">+ Add Task</button>
+      </form>
+    </section>
 
-    <div id="empty-state" class="empty-state">
-      <p>No tasks here yet. Add your first task above to get started!</p>
-    </div>
-  </main>
+    <!-- Search & Filter Bar -->
+    <section class="bento-card board-card">
+      <div class="board-controls">
+        <input
+          type="search"
+          id="search-input"
+          class="search-box"
+          placeholder="🔍 Search tasks..."
+        />
+        <div class="filter-pills">
+          <button type="button" class="pill-btn active" data-filter="all">All</button>
+          <button type="button" class="pill-btn" data-filter="coding">Coding</button>
+          <button type="button" class="pill-btn" data-filter="study">Study</button>
+          <button type="button" class="pill-btn" data-filter="project">Project</button>
+          <button type="button" class="pill-btn" data-filter="personal">Personal</button>
+        </div>
+      </div>
 
+      <ul id="task-list" class="task-list"></ul>
+
+      <div id="empty-msg" class="empty-msg">
+        <h3>Your board is clear ✨</h3>
+        <p>Add a task above and hit <strong>Focus</strong> on any item to start a 25-minute sprint.</p>
+      </div>
+    </section>
+  </div>
+
+  <canvas id="confetti-canvas"></canvas>
   <script src="script.js" defer></script>
 </body>
 </html>
