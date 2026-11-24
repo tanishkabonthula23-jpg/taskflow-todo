@@ -3,95 +3,98 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AuraBoard | Interactive Task & Focus Planner</title>
+  <title>QuestBoard | Interactive Kanban & XP Tracker</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-
-  <div class="dashboard">
-    <!-- Top Bento Stats & Focus Timer -->
-    <section class="bento-top">
-      <div class="bento-card brand-card">
-        <span class="pill-tag">✨ Daily Focus Studio</span>
-        <h1>AuraBoard</h1>
-        <p id="today-label" class="date-text"></p>
-        <div class="streak-row">
-          <div class="stat-box">
-            <strong id="stat-total">0</strong>
-            <span>Total</span>
-          </div>
-          <div class="stat-box">
-            <strong id="stat-active">0</strong>
-            <span>Pending</span>
-          </div>
-          <div class="stat-box">
-            <strong id="stat-done">0</strong>
-            <span>Done</span>
-          </div>
-        </div>
+  <div class="page-wrap">
+    <!-- Top Header & XP HUD -->
+    <header class="top-hud">
+      <div class="brand-block">
+        <div class="sticker-badge">⚡ INTERACTIVE WORKSPACE</div>
+        <h1>QuestBoard</h1>
+        <p class="tagline">Turn daily tasks into levels. Drag, promote, and conquer your sprint.</p>
       </div>
 
-      <div class="bento-card timer-card">
-        <span class="pill-tag">⏱️ 25-Min Study Sprint</span>
-        <div id="timer-display" class="timer-clock">25:00</div>
-        <p id="active-focus-label" class="focus-task-name">Pick a task or start sprint</p>
-        <div class="timer-controls">
-          <button type="button" id="timer-start" class="btn-coral">Start</button>
-          <button type="button" id="timer-pause" class="btn-soft">Pause</button>
-          <button type="button" id="timer-reset" class="btn-soft">Reset</button>
+      <div class="xp-card">
+        <div class="xp-row">
+          <span id="rank-title" class="rank-pill">LVL 1 • CODE ROOKIE</span>
+          <strong id="xp-counter">0 XP</strong>
+        </div>
+        <div class="xp-bar-outer">
+          <div id="xp-bar-fill" class="xp-bar-inner"></div>
+        </div>
+        <div class="xp-sub">
+          <span id="completed-summary">0 quests completed</span>
+          <button type="button" id="sound-toggle" class="sound-btn" title="Toggle sound">🔊 Sound On</button>
         </div>
       </div>
-    </section>
+    </header>
 
-    <!-- Add Task Form -->
-    <section class="bento-card composer-card">
-      <form id="task-form" class="composer-form" autocomplete="off">
+    <!-- Task Composer -->
+    <section class="composer-bar">
+      <form id="quest-form" class="quest-form" autocomplete="off">
         <input
           type="text"
-          id="task-input"
-          placeholder="Add a coding goal, assignment, or daily task..."
+          id="quest-input"
+          placeholder="Write a new quest (e.g., Build REST API, Revise DSA Trees)..."
           required
         />
-        <select id="category-select" aria-label="Category">
-          <option value="coding">💻 Coding</option>
-          <option value="study">📚 Study</option>
-          <option value="project">🚀 Project</option>
-          <option value="personal">🌿 Personal</option>
+        <select id="quest-tag" aria-label="Quest Category">
+          <option value="dev">💻 Dev (+30 XP)</option>
+          <option value="study">📘 Study (+25 XP)</option>
+          <option value="design">🎨 Design (+20 XP)</option>
+          <option value="life">☀️ Daily (+15 XP)</option>
         </select>
-        <button type="submit" class="btn-coral">+ Add Task</button>
+        <button type="submit" class="btn-create">+ Launch Quest</button>
       </form>
     </section>
 
-    <!-- Search & Filter Bar -->
-    <section class="bento-card board-card">
-      <div class="board-controls">
-        <input
-          type="search"
-          id="search-input"
-          class="search-box"
-          placeholder="🔍 Search tasks..."
-        />
-        <div class="filter-pills">
-          <button type="button" class="pill-btn active" data-filter="all">All</button>
-          <button type="button" class="pill-btn" data-filter="coding">Coding</button>
-          <button type="button" class="pill-btn" data-filter="study">Study</button>
-          <button type="button" class="pill-btn" data-filter="project">Project</button>
-          <button type="button" class="pill-btn" data-filter="personal">Personal</button>
-        </div>
-      </div>
-
-      <ul id="task-list" class="task-list"></ul>
-
-      <div id="empty-msg" class="empty-msg">
-        <h3>Your board is clear ✨</h3>
-        <p>Add a task above and hit <strong>Focus</strong> on any item to start a 25-minute sprint.</p>
+    <!-- Quick Filter & Search Strip -->
+    <section class="controls-strip">
+      <input
+        type="search"
+        id="search-box"
+        class="search-field"
+        placeholder="Filter quests by keyword..."
+      />
+      <div class="tag-filters">
+        <button type="button" class="chip-filter active" data-tag="all">All Quests</button>
+        <button type="button" class="chip-filter" data-tag="dev">Dev</button>
+        <button type="button" class="chip-filter" data-tag="study">Study</button>
+        <button type="button" class="chip-filter" data-tag="design">Design</button>
+        <button type="button" class="chip-filter" data-tag="life">Daily</button>
       </div>
     </section>
+
+    <!-- 3-Column Kanban Board -->
+    <main class="kanban-grid">
+      <section class="kanban-col col-todo" data-status="todo">
+        <div class="col-header">
+          <h2>📌 Backlog</h2>
+          <span id="count-todo" class="col-count">0</span>
+        </div>
+        <div id="list-todo" class="drop-zone"></div>
+      </section>
+
+      <section class="kanban-col col-doing" data-status="doing">
+        <div class="col-header">
+          <h2>🔥 In Progress</h2>
+          <span id="count-doing" class="col-count">0</span>
+        </div>
+        <div id="list-doing" class="drop-zone"></div>
+      </section>
+
+      <section class="kanban-col col-done" data-status="done">
+        <div class="col-header">
+          <h2>🏆 Completed</h2>
+          <span id="count-done" class="col-count">0</span>
+        </div>
+        <div id="list-done" class="drop-zone"></div>
+      </section>
+    </main>
   </div>
 
-  <canvas id="confetti-canvas"></canvas>
   <script src="script.js" defer></script>
 </body>
 </html>
