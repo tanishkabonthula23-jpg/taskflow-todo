@@ -1,236 +1,273 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const taskForm = document.getElementById("task-form");
-  const taskInput = document.getElementById("task-input");
-  const categorySelect = document.getElementById("category-select");
-  const searchInput = document.getElementById("search-input");
-  const filterBtns = document.querySelectorAll(".pill-btn");
-  const taskList = document.getElementById("task-list");
-  const emptyMsg = document.getElementById("empty-msg");
+  const form = document.getElementById("quest-form");
+  const input = document.getElementById("quest-input");
+  const tagSelect = document.getElementById("quest-tag");
+  const searchBox = document.getElementById("search-box");
+  const filterChips = document.querySelectorAll(".chip-filter");
+  const soundToggle = document.getElementById("sound-toggle");
 
-  const statTotal = document.getElementById("stat-total");
-  const statActive = document.getElementById("stat-active");
-  const statDone = document.getElementById("stat-done");
-  const todayLabel = document.getElementById("today-label");
+  const lists = {
+    todo: document.getElementById("list-todo"),
+    doing: document.getElementById("list-doing"),
+    done: document.getElementById("list-done"),
+  };
 
-  // Timer elements
-  const timerDisplay = document.getElementById("timer-display");
-  const focusLabel = document.getElementById("active-focus-label");
-  const startBtn = document.getElementById("timer-start");
-  const pauseBtn = document.getElementById("timer-pause");
-  const resetBtn = document.getElementById("timer-reset");
+  const counts = {
+    todo: document.getElementById("count-todo"),
+    doing: document.getElementById("count-doing"),
+    done: document.getElementById("count-done"),
+  };
 
-  const STORAGE_KEY = "auraboard_tasks_v1";
-  let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  let activeCategory = "all";
-  let searchQuery = "";
+  const xpCounter = document.getElementById("xp-counter");
+  const xpBarFill = document.getElementById("xp-bar-fill");
+  const rankTitle = document.getElementById("rank-title");
+  const completedSummary = document.getElementById("completed-summary");
 
-  // Set formatted date
-  todayLabel.textContent = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
+  const XP_MAP = { dev: 30, study: 25, design: 20, life: 15 };
+  const RANKS = [
+    "CODE ROOKIE",
+    "BUG HUNTER",
+    "STACK BUILDER",
+    "SPRINT ARCHITECT",
+    "FULL-STACK LEGEND",
+  ];
+
+  const STORAGE_KEY = "questboard_data_v1";
+  let quests = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+    {
+      id: "1",
+      title: "Build interactive Kanban board on GitHub",
+      tag: "dev",
+      status: "doing",
+    },
+    {
+      id: "2",
+      title: "Practice Data Structures & Algorithms problems",
+      tag: "study",
+      status: "todo",
+    },
+  ];
+
+  let activeTag = "all";
+  let keyword = "";
+  let soundEnabled = true;
+  let draggedId = null;
+
+  function playTone(freq = 520, duration = 0.12) {
+    if (!soundEnabled) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    } catch {
+      // Audio blocked before interaction
+    }
+  }
+
+  soundToggle.addEventListener("click", () => {
+    soundEnabled = !soundEnabled;
+    soundToggle.textContent = soundEnabled ? "🔊 Sound On" : "🔇 Muted";
   });
 
-  // 25-minute Pomodoro timer state
-  let secondsLeft = 25 * 60;
-  let timerInterval = null;
-
-  function renderTimer() {
-    const mins = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
-    const secs = String(secondsLeft % 60).padStart(2, "0");
-    timerDisplay.textContent = `${mins}:${secs}`;
-  }
-
-  function startTimer() {
-    if (timerInterval) return;
-    timerInterval = setInterval(() => {
-      if (secondsLeft > 0) {
-        secondsLeft--;
-        renderTimer();
-      } else {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        launchConfetti();
-        focusLabel.textContent = "🎉 Sprint Complete!";
-      }
-    }, 1000);
-  }
-
-  function pauseTimer() {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-
-  function resetTimer() {
-    pauseTimer();
-    secondsLeft = 25 * 60;
-    renderTimer();
-  }
-
-  startBtn.addEventListener("click", startTimer);
-  pauseBtn.addEventListener("click", pauseTimer);
-  resetBtn.addEventListener("click", resetTimer);
-
-  // Confetti burst when finishing tasks or sprints
-  function launchConfetti() {
-    const canvas = document.getElementById("confetti-canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const colors = ["#ff6b6b", "#fbbf24", "#34d399", "#a78bfa", "#38bdf8"];
-    const pieces = Array.from({ length: 75 }, () => ({
-      x: Math.random() * canvas.width,
-      y: -20 - Math.random() * 120,
-      size: 6 + Math.random() * 6,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      speedY: 3 + Math.random() * 4,
-      speedX: -2 + Math.random() * 4,
-    }));
-
-    let frame = 0;
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pieces.forEach((p) => {
-        p.y += p.speedY;
-        p.x += p.speedX;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, p.size, p.size);
-      });
-      frame++;
-      if (frame < 90) {
-        requestAnimationFrame(animate);
-      } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-    }
-    animate();
-  }
-
   function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(quests));
   }
 
-  function updateStats() {
-    const done = tasks.filter((t) => t.done).length;
-    statTotal.textContent = String(tasks.length);
-    statDone.textContent = String(done);
-    statActive.textContent = String(tasks.length - done);
+  function updateXP() {
+    const doneQuests = quests.filter((q) => q.status === "done");
+    const totalXP = doneQuests.reduce((sum, q) => sum + (XP_MAP[q.tag] || 20), 0);
+    const level = Math.floor(totalXP / 100) + 1;
+    const progressInLevel = totalXP % 100;
+    const rankName = RANKS[Math.min(level - 1, RANKS.length - 1)];
+
+    xpCounter.textContent = `${totalXP} XP`;
+    xpBarFill.style.width = `${progressInLevel}%`;
+    rankTitle.textContent = `LVL ${level} • ${rankName}`;
+    completedSummary.textContent = `${doneQuests.length} quest${doneQuests.length === 1 ? "" : "s"} completed`;
+  }
+
+  function moveQuest(id, nextStatus) {
+    quests = quests.map((q) => {
+      if (q.id === id) {
+        if (q.status !== "done" && nextStatus === "done") {
+          playTone(680, 0.18);
+        } else {
+          playTone(440, 0.09);
+        }
+        return { ...q, status: nextStatus };
+      }
+      return q;
+    });
+    save();
+    render();
+  }
+
+  function deleteQuest(id) {
+    quests = quests.filter((q) => q.id !== id);
+    playTone(260, 0.1);
+    save();
+    render();
   }
 
   function render() {
-    taskList.innerHTML = "";
-    const filtered = tasks.filter((t) => {
-      const matchesCat = activeCategory === "all" || t.category === activeCategory;
-      const matchesSearch = t.text.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCat && matchesSearch;
+    Object.values(lists).forEach((el) => (el.innerHTML = ""));
+
+    const filtered = quests.filter((q) => {
+      const tagMatch = activeTag === "all" || q.tag === activeTag;
+      const textMatch = q.title.toLowerCase().includes(keyword.toLowerCase());
+      return tagMatch && textMatch;
     });
 
-    emptyMsg.classList.toggle("hidden", filtered.length > 0);
+    ["todo", "doing", "done"].forEach((status) => {
+      const items = filtered.filter((q) => q.status === status);
+      counts[status].textContent = String(items.length);
 
-    filtered.forEach((task) => {
-      const li = document.createElement("li");
-      li.className = `task-card ${task.done ? "done" : ""}`;
-
-      const main = document.createElement("div");
-      main.className = "task-main";
-
-      const check = document.createElement("button");
-      check.type = "button";
-      check.className = "check-circle";
-      check.textContent = task.done ? "✓" : "";
-      check.addEventListener("click", () => toggleTask(task.id));
-
-      const title = document.createElement("span");
-      title.className = "task-title";
-      title.textContent = task.text;
-      title.addEventListener("click", () => toggleTask(task.id));
-
-      main.appendChild(check);
-      main.appendChild(title);
-
-      const meta = document.createElement("div");
-      meta.className = "task-meta";
-
-      const badge = document.createElement("span");
-      badge.className = `cat-badge cat-${task.category}`;
-      badge.textContent = task.category;
-
-      const focusBtn = document.createElement("button");
-      focusBtn.type = "button";
-      focusBtn.className = "mini-btn";
-      focusBtn.textContent = "Focus";
-      focusBtn.addEventListener("click", () => {
-        focusLabel.textContent = `Focusing: ${task.text}`;
-        resetTimer();
-        startTimer();
-      });
-
-      const delBtn = document.createElement("button");
-      delBtn.type = "button";
-      delBtn.className = "mini-btn del";
-      delBtn.textContent = "✕";
-      delBtn.addEventListener("click", () => deleteTask(task.id));
-
-      meta.appendChild(badge);
-      meta.appendChild(focusBtn);
-      meta.appendChild(delBtn);
-
-      li.appendChild(main);
-      li.appendChild(meta);
-      taskList.appendChild(li);
-    });
-
-    updateStats();
-  }
-
-  function toggleTask(id) {
-    let justCompleted = false;
-    tasks = tasks.map((t) => {
-      if (t.id === id) {
-        justCompleted = !t.done;
-        return { ...t, done: !t.done };
+      if (items.length === 0) {
+        const hint = document.createElement("p");
+        hint.className = "empty-hint";
+        hint.textContent = "Drop a quest card here";
+        lists[status].appendChild(hint);
+        return;
       }
-      return t;
+
+      items.forEach((quest) => {
+        const card = document.createElement("div");
+        card.className = "quest-card";
+        card.draggable = true;
+
+        card.addEventListener("dragstart", () => {
+          draggedId = quest.id;
+          card.classList.add("dragging");
+        });
+        card.addEventListener("dragend", () => {
+          draggedId = null;
+          card.classList.remove("dragging");
+        });
+
+        const top = document.createElement("div");
+        top.className = "quest-top";
+
+        const badge = document.createElement("span");
+        badge.className = `quest-badge tag-${quest.tag}`;
+        badge.textContent = quest.tag;
+
+        const xp = document.createElement("span");
+        xp.className = "xp-tag";
+        xp.textContent = `+${XP_MAP[quest.tag] || 20} XP`;
+
+        top.appendChild(badge);
+        top.appendChild(xp);
+
+        const title = document.createElement("div");
+        title.className = "quest-title";
+        title.textContent = quest.title;
+
+        const footer = document.createElement("div");
+        footer.className = "quest-footer";
+
+        const moveBtns = document.createElement("div");
+        moveBtns.className = "move-btns";
+
+        if (status !== "todo") {
+          const backBtn = document.createElement("button");
+          backBtn.type = "button";
+          backBtn.className = "action-btn";
+          backBtn.textContent = status === "done" ? "← Reopen" : "← Backlog";
+          backBtn.addEventListener("click", () =>
+            moveQuest(quest.id, status === "done" ? "doing" : "todo")
+          );
+          moveBtns.appendChild(backBtn);
+        }
+
+        if (status !== "done") {
+          const nextBtn = document.createElement("button");
+          nextBtn.type = "button";
+          nextBtn.className = "action-btn";
+          nextBtn.textContent = status === "todo" ? "Start →" : "Complete ✓";
+          nextBtn.addEventListener("click", () =>
+            moveQuest(quest.id, status === "todo" ? "doing" : "done")
+          );
+          moveBtns.appendChild(nextBtn);
+        }
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "action-btn del";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", () => deleteQuest(quest.id));
+
+        footer.appendChild(moveBtns);
+        footer.appendChild(delBtn);
+
+        card.appendChild(top);
+        card.appendChild(title);
+        card.appendChild(footer);
+        lists[status].appendChild(card);
+      });
     });
-    save();
-    render();
-    if (justCompleted && tasks.length > 0 && tasks.every((t) => t.done)) {
-      launchConfetti();
-    }
+
+    updateXP();
   }
 
-  function deleteTask(id) {
-    tasks = tasks.filter((t) => t.id !== id);
-    save();
-    render();
-  }
+  // Enable drag-and-drop on columns
+  document.querySelectorAll(".kanban-col").forEach((col) => {
+    const status = col.getAttribute("data-status");
+    const zone = col.querySelector(".drop-zone");
 
-  taskForm.addEventListener("submit", (e) => {
+    col.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      zone.classList.add("drag-over");
+    });
+
+    col.addEventListener("dragleave", () => {
+      zone.classList.remove("drag-over");
+    });
+
+    col.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      if (draggedId && status) {
+        moveQuest(draggedId, status);
+      }
+    });
+  });
+
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const text = taskInput.value.trim();
-    if (!text) return;
-    tasks.unshift({
+    const title = input.value.trim();
+    if (!title) return;
+
+    quests.unshift({
       id: Date.now().toString(),
-      text,
-      category: categorySelect.value,
-      done: false,
+      title,
+      tag: tagSelect.value,
+      status: "todo",
     });
+
+    playTone(540, 0.1);
     save();
     render();
-    taskInput.value = "";
+    input.value = "";
   });
 
-  searchInput.addEventListener("input", (e) => {
-    searchQuery = e.target.value;
+  searchBox.addEventListener("input", (e) => {
+    keyword = e.target.value;
     render();
   });
 
-  filterBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      filterBtns.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      activeCategory = btn.getAttribute("data-filter");
+  filterChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      filterChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeTag = chip.getAttribute("data-tag");
       render();
     });
   });
